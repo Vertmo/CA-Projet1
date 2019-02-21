@@ -12,7 +12,8 @@ let speclist = [
 let main filename step =
   let ic = open_in filename in
   let bc = Parser.parse ic in
+  close_in ic;
   if(step = Parse) then print_endline (Bytecode.string_of_bc bc)
-  else ignore (Eval.eval_bc bc)
+  else Eval.eval_bc bc
 
 let _ = Arg.parse speclist (fun x -> main x !step) usage
