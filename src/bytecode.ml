@@ -10,6 +10,11 @@ let string_of_prim = function
   | Lt -> "<" | Lte -> "<=" | Gt -> ">" | Gte -> ">="
   | Print -> "print"
 
+let arity_of_prim = function
+  | Add | Sub | Mult | Div | Or | And | Eq | Diff
+  | Lt | Lte | Gt | Gte -> 2
+  | Not | Print -> 1
+
 type opcode = CONST of int
             | PRIM of prim
             | BRANCH of string
