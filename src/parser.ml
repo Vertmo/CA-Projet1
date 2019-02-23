@@ -30,6 +30,8 @@ let opcode_of_string_and_args s args = match s with
   | "APPLY" -> APPLY (int_of_string (List.nth args 0))
   | "RETURN" -> RETURN (int_of_string (List.nth args 0))
   | "STOP" -> STOP
+  | "CLOSUREREC" -> CLOSUREREC ((List.nth args 0), (int_of_string (List.nth args 1)))
+  | "OFFSETCLOSURE" -> OFFSETCLOSURE
   | s -> failwith (Printf.sprintf "Unrecognized opcode %s" s)
 
 let scan l =
