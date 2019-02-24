@@ -1,0 +1,80 @@
+\documentclass{article}
+\usepackage{listings}
+\lstset{language=Caml}
+
+\title{CA - Projet 1 - MiniZAM}
+\author{Basile Pesin\\Sorbonne Université}
+
+\begin{document}
+\maketitle
+
+\section{Choix du langage et structure du projet}
+
+Pour implémenter une machine virtuelle chargée d'exécuter du Caml, quoi de mieux que le langage OCaml ? Blague a part, la principale raison de ce choix est la sécurité donnée par le typage, en particulier au niveau des instructions et des valeurs (comme on le verra dans la section suivante). La Garbage Collector d'OCaml permet aussi de ne pas avoir à nous soucier d'en implémenter un nous même (puisque les valeurs à nettoyer seront celles également inaccessibles dans la mémoire du programme, elles seront nettoyées par le GC d'OCaml).\\
+
+\subsection{Utilisation}
+
+Le projet utilise \textit{dune} comme build system. Il peut donc être compilé avec \textit{dune build src/minizam.exe}. On peut ensuite exécuter le programme sur un des fichiers de test avec \textit{dune exec src/minizam.exe $<$fichier$>$}.
+
+\subsection{Structure}
+
+Le projet est structuré en 4 modules principaux:
+\begin{itemize}
+  \item \textbf{Minizam} contient le parsing des arguments de la ligne de commande, ainsi que le main
+  \item \textbf{Bytecode} contient les types permettant de décrire un programme (voir la description de ces types plus bas) ainsi que quelques fonctions permettant d'afficher le bytecode (principalement pour débugger le parser).
+  \item \textbf{Parser} contient comme son nom l'indique les fonctions permettant de parser un programme depuis un fichier texte
+  \item \textbf{Eval} contient les fonctions permettant d'interpreter le bytecode chargé, ainsi que les définitions des types nécessaires à l'interpretation (voir la section suivante).
+\end{itemize}
+
+\section{Des types, des types et encore des types}
+
+\subsection{Représentation du programme}
+
+On représente un programme par une liste d'instructions, qui portent chacune un opcode et ses arguments, et éventuellement un label.
+
+\begin{lstlisting}
+type opcode = CONST of int
+            | PRIM of prim
+            [...]
+
+type ins =
+  | Anon of opcode
+  | Labeled of string * opcode
+\end{lstlisting}
+
+Stocker les arguments dans l'opcode (plutôt que dans l'instruction) ne complique pas tellement la phase de parsing, mais permet d'avoir un code beaucoup plus simple au moment de l'évaluation, puisqu'on peut alors faire un pattern matching sur l'opcode directement.
+
+\subsection{Représentation des valeurs}
+
+On représente les valeurs OCaml ($mlvalues$) a l'exécution par un type somme, permettant dans le code de l'interpreteur de traiter les différents cas:
+\begin{lstlisting}
+type mlvalue = Int of int
+             | Unit
+             | Closure of int * mlvalue list
+             | Pc of int
+             | Label of string
+             | ExtraArgs of int
+             | Env of mlvalue list
+\end{lstlisting}
+On remarque qu'on représente simplement les fermetures par un pointeur de code, accompagné de l'environnement statique de la fermeture. On remarque également que les booleans sont vus comme des valeurs numériques, ce qui est aussi le cas dans la vraie ZAM.\\
+Dans cette version, on a fait ce même choix pour pouvoir manipuler la valeur $true$, représentée par $CONST\:1$ dans le bytecode (idem $false$ par $CONST\:0$).\\
+
+L'état de la machine virtuelles (c'est à dire les registres) est lui représenté par un record du type suivant:
+\begin{lstlisting}
+type vm_state = {
+  mutable prog: ins list;
+  mutable stack: mlvalue list;
+  mutable env: mlvalue list;
+  mutable pc: int;
+  mutable accu: mlvalue;
+  mutable extra_args: int;
+}
+\end{lstlisting}
+On remarque qu'on utilise des champs mutables dans le record; en effet on utilise une seule structure globale qu'on modifie durant l'exécution d'un programme (le registre prog n'est bien sur modifié qu'au début de l'exécution, puisque le programme ne change pas durant l'exécution). Ce n'est pas très ``pur'' mais cela simplifie la signature des fonctions, et rends le code plus concis.
+
+\section{Tests ajoutés}
+Les tests ajoutés se trouvent dans le dossier \textit{samples/my\_tests}. Ils ont principalement été générés en compilant du code OCaml avec l'option \textit{-dinstr} (avec bien sur quelques adaptations pour rester dans le jeu d'instruction de la mini-zam).
+
+TODO
+
+\end{document}

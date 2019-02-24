@@ -3,7 +3,9 @@ open Bytecode
 type mlvalue = Int of int
              | Unit
              | Closure of int * mlvalue list
-             | Pc of int | Label of string | ExtraArgs of int
+             | Pc of int
+             | Label of string
+             | ExtraArgs of int
              | Env of mlvalue list
 
 let string_of_mlvalue = function
