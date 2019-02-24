@@ -110,7 +110,9 @@ let eval_opcode = function
                           let (env, newStack) = pop_n n state.stack in
                           state.stack <- newStack;
                           let pc = find_pc_of_label l 0 state.prog in
-                          state.accu <- Closure (pc, ((Pc pc)::env)))
+                          let c = Closure (pc, ((Pc pc)::env)) in
+                          state.accu <- c;
+                          state.stack <- c::state.stack)
   | OFFSETCLOSURE -> (match (List.hd (state.env)) with
       | Pc pc -> state.accu <- Closure (pc, state.env)
       | _ -> failwith "Should not happen")
