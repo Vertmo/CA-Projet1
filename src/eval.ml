@@ -2,16 +2,17 @@ open Bytecode
 
 type mlvalue = Int of int
              | Unit
-             | Closure of string * mlvalue list
-             | Pc of int | Label of string
+             | Closure of int * mlvalue list
+             | Pc of int | Label of string | ExtraArgs of int
              | Env of mlvalue list
 
 let string_of_mlvalue = function
   | Int i -> string_of_int i
   | Unit -> "()"
-  | Closure (s, _) -> Printf.sprintf "closure %s <env>" s
+  | Closure (pc, _) -> Printf.sprintf "closure %d <env>" pc
   | Pc i -> Printf.sprintf "pc %d " i
   | Label l -> Printf.sprintf "label %s" l
+  | ExtraArgs n -> Printf.sprintf "extra_args %d" n
   | Env _ -> "env"
 
 type vm_state = {
@@ -20,6 +21,7 @@ type vm_state = {
   mutable env: mlvalue list;
   mutable pc: int;
   mutable accu: mlvalue;
+  mutable extra_args: int;
 }
 
 let state: vm_state = {
@@ -28,6 +30,7 @@ let state: vm_state = {
   env = [];
   pc = 0;
   accu = Unit;
+  extra_args = 0;
 }
 
 let rec pop_n n = function
@@ -78,28 +81,60 @@ let eval_opcode = function
   | CLOSURE (l, n) -> (if n > 0 then state.stack <- state.accu::state.stack;
                        let (env, newStack) = pop_n n state.stack in
                        state.stack <- newStack;
-                       state.accu <- Closure (l, env))
+                       state.accu <- Closure ((find_pc_of_label l 0 state.prog), env))
   | APPLY n -> let (args, newStack) = pop_n n state.stack in
-    state.stack <- args@[Pc (state.pc+1)]@[Env state.env]@newStack;
+    state.stack <- args@[Pc (state.pc+1)]@[Env state.env]@[ExtraArgs state.extra_args]@newStack;
+    state.extra_args <- n-1;
     (match state.accu with
-     | Closure (l, env) -> (state.pc <- (find_pc_of_label l 0 state.prog); state.env <- env)
+     | Closure (pc, env) -> (state.pc <- pc; state.env <- env)
      | _ -> failwith "Should not happen")
   | RETURN n -> let (_, newStack) = pop_n n state.stack in
-    let pc = (List.hd newStack) and newStack = (List.tl newStack) in
-    let env = (List.hd newStack) and newStack = (List.tl newStack) in
     state.stack <- newStack;
-    (match (pc, env) with
-     | (Pc pc), (Env e) -> (state.pc <- pc; state.env <- e)
-     | _ -> failwith "Should not happen")
+    if(state.extra_args = 0) then (
+      let pc = (List.hd state.stack) and newStack = (List.tl state.stack) in
+      let env = (List.hd newStack) and newStack = (List.tl newStack) in
+      let extra_args = (List.hd newStack) and newStack = (List.tl newStack) in
+      state.stack <- newStack;
+      (match (pc, env,extra_args) with
+       | (Pc pc), (Env e), (ExtraArgs ext) -> (state.pc <- pc; state.env <- e; state.extra_args <- ext)
+       | _ -> failwith "Should not happen"))
+    else (
+      state.extra_args <- state.extra_args-1;
+      match state.accu with
+      | Closure (pc, env) -> state.pc <- pc; state.env <- env
+      | _ -> failwith "Should not happen"
+    )
   | STOP -> (print_endline "----------Fin du programme. Valeur de retour :-----------";
              print_endline (string_of_mlvalue state.accu); exit 0)
   | CLOSUREREC (l, n) -> (if n > 0 then state.stack <- state.accu::state.stack;
                           let (env, newStack) = pop_n n state.stack in
                           state.stack <- newStack;
-                          state.accu <- Closure (l, ((Label l)::env)))
+                          let pc = find_pc_of_label l 0 state.prog in
+                          state.accu <- Closure (pc, ((Pc pc)::env)))
   | OFFSETCLOSURE -> (match (List.hd (state.env)) with
-      | Label l -> state.accu <- Closure (l, state.env)
+      | Pc pc -> state.accu <- Closure (pc, state.env)
       | _ -> failwith "Should not happen")
+  | GRAB n -> if state.extra_args >= n then state.extra_args <- state.extra_args - n
+    else (
+      let (env, newStack) = pop_n (state.extra_args+1) state.stack in state.stack <- newStack; (* TODO Combien on dépile ? *)
+      state.accu <- Closure (state.pc-1, (Env state.env)::env); (* TODO a verifier *)
+      let pc = (List.hd state.stack) and newStack = (List.tl state.stack) in
+      let env = (List.hd newStack) and newStack = (List.tl newStack) in
+      let extra_args = (List.hd newStack) and newStack = (List.tl newStack) in
+      state.stack <- newStack;
+      match (pc, env, extra_args) with
+      | (Pc pc), (Env env), (ExtraArgs ext) -> (
+          state.pc <- pc;  state.env <- env; state.extra_args <- ext;
+        )
+      | _ -> failwith "Should not happen"
+    )
+  | RESTART -> let n = List.length state.env in
+    let (env, _) = pop_n n state.env in
+    state.stack <- (List.tl env)@state.stack;
+    (match (List.hd env) with
+     | Env e -> state.env <- e
+     | _ -> failwith "Should not happen");
+    state.extra_args <- state.extra_args + (n-1)
   (* | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o)) *)
 
 let eval_ins = function

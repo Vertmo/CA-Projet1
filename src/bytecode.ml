@@ -29,6 +29,8 @@ type opcode = CONST of int
             | STOP
             | CLOSUREREC of string * int
             | OFFSETCLOSURE
+            | GRAB of int
+            | RESTART
 
 let string_of_opcode = function
   | CONST n -> Printf.sprintf "CONST %d" n
@@ -45,6 +47,8 @@ let string_of_opcode = function
   | STOP -> "STOP"
   | CLOSUREREC (l, n) -> Printf.sprintf "CLOSUREREC %s,%d" l n
   | OFFSETCLOSURE -> "OFFSETCLOSURE"
+  | GRAB n -> Printf.sprintf "GRAB %d" n
+  | RESTART -> "RESTART"
 
 type ins =
   | Anon of opcode

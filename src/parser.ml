@@ -32,6 +32,8 @@ let opcode_of_string_and_args s args = match s with
   | "STOP" -> STOP
   | "CLOSUREREC" -> CLOSUREREC ((List.nth args 0), (int_of_string (List.nth args 1)))
   | "OFFSETCLOSURE" -> OFFSETCLOSURE
+  | "GRAB" -> GRAB (int_of_string (List.nth args 0))
+  | "RESTART" -> RESTART
   | s -> failwith (Printf.sprintf "Unrecognized opcode %s" s)
 
 let scan l =
