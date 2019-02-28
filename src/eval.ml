@@ -139,7 +139,7 @@ let eval_opcode = function
      | Env e -> state.env <- e
      | _ -> failwith "Should not happen");
     state.extra_args <- state.extra_args + (n-1)
-  (* | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o)) *)
+  | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o))
 
 let eval_ins = function
   | Anon o -> eval_opcode o

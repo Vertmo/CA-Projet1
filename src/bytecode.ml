@@ -31,6 +31,14 @@ type opcode = CONST of int
             | OFFSETCLOSURE
             | GRAB of int
             | RESTART
+            (* Blocs de valeurs *)
+            | MAKEBLOCK of int
+            | GETFIELD of int
+            | VECTLENGTH
+            | GETVECTITEM
+            | SETFIELD of int
+            | SETVECTITEM
+            | ASSIGN of int
 
 let string_of_opcode = function
   | CONST n -> Printf.sprintf "CONST %d" n
@@ -49,6 +57,13 @@ let string_of_opcode = function
   | OFFSETCLOSURE -> "OFFSETCLOSURE"
   | GRAB n -> Printf.sprintf "GRAB %d" n
   | RESTART -> "RESTART"
+  | MAKEBLOCK n -> Printf.sprintf "MAKEBLOCK %d" n
+  | GETFIELD n -> Printf.sprintf "GETFIELD %d" n
+  | VECTLENGTH -> "VECTLENGTH"
+  | GETVECTITEM -> "GETVECTITEM"
+  | SETFIELD n -> Printf.sprintf "SETFIELD %d" n
+  | SETVECTITEM -> Printf.sprintf "SETVECTITEM"
+  | ASSIGN n -> Printf.sprintf "ASSIGN %d" n
 
 type ins =
   | Anon of opcode
