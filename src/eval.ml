@@ -7,8 +7,9 @@ type mlvalue = Int of int
              | Label of string
              | ExtraArgs of int
              | Env of mlvalue list
+             | Block of mlvalue array
 
-let string_of_mlvalue = function
+let rec string_of_mlvalue = function
   | Int i -> string_of_int i
   | Unit -> "()"
   | Closure (pc, _) -> Printf.sprintf "closure %d <env>" pc
@@ -16,6 +17,8 @@ let string_of_mlvalue = function
   | Label l -> Printf.sprintf "label %s" l
   | ExtraArgs n -> Printf.sprintf "extra_args %d" n
   | Env _ -> "env"
+  | Block a -> Printf.sprintf "(%s)" (String.concat ","
+                                        (Array.to_list (Array.map string_of_mlvalue a)))
 
 type vm_state = {
   mutable prog: ins list;
@@ -76,8 +79,8 @@ let eval_opcode = function
   | BRANCH l -> state.pc <- (find_pc_of_label l 0 state.prog)
   | BRANCHIFNOT l -> (match state.accu with
       | Int 0 -> state.pc <- (find_pc_of_label l 0 state.prog)
-      | Int _ -> ()
-      | _ -> failwith "Should not happen")
+      | Int _ | Block _ -> ()
+      | _ -> failwith "Should not happen (BRANCHIFNOT)")
   | ACC i -> state.accu <- (List.nth state.stack i)
   | ENVACC i -> state.accu <- (List.nth state.env i)
   | CLOSURE (l, n) -> (if n > 0 then state.stack <- state.accu::state.stack;
@@ -89,7 +92,7 @@ let eval_opcode = function
     state.extra_args <- n-1;
     (match state.accu with
      | Closure (pc, env) -> (state.pc <- pc; state.env <- env)
-     | _ -> failwith "Should not happen")
+     | _ -> failwith "Should not happen (APPLY)")
   | RETURN n -> let (_, newStack) = pop_n n state.stack in
     state.stack <- newStack;
     if(state.extra_args = 0) then (
@@ -99,12 +102,12 @@ let eval_opcode = function
       state.stack <- newStack;
       (match (pc, env,extra_args) with
        | (Pc pc), (Env e), (ExtraArgs ext) -> (state.pc <- pc; state.env <- e; state.extra_args <- ext)
-       | _ -> failwith "Should not happen"))
+       | _ -> failwith "Should not happen (RETURN)"))
     else (
       state.extra_args <- state.extra_args-1;
       match state.accu with
       | Closure (pc, env) -> state.pc <- pc; state.env <- env
-      | _ -> failwith "Should not happen"
+      | _ -> failwith "Should not happen (RETURN)"
     )
   | STOP -> (print_endline "----------Fin du programme. Valeur de retour :-----------";
              print_endline (string_of_mlvalue state.accu); exit 0)
@@ -117,7 +120,7 @@ let eval_opcode = function
                           state.stack <- c::state.stack)
   | OFFSETCLOSURE -> (match (List.hd (state.env)) with
       | Pc pc -> state.accu <- Closure (pc, state.env)
-      | _ -> failwith "Should not happen")
+      | _ -> failwith "Should not happen (OFFSETCLOSURE)")
   | GRAB n -> if state.extra_args >= n then state.extra_args <- state.extra_args - n
     else (
       let (env, newStack) = pop_n (state.extra_args+1) state.stack in state.stack <- newStack; (* TODO Combien on dépile ? *)
@@ -130,16 +133,54 @@ let eval_opcode = function
       | (Pc pc), (Env env), (ExtraArgs ext) -> (
           state.pc <- pc;  state.env <- env; state.extra_args <- ext;
         )
-      | _ -> failwith "Should not happen"
+      | _ -> failwith "Should not happen (GRAB)"
     )
   | RESTART -> let n = List.length state.env in
     let (env, _) = pop_n n state.env in
     state.stack <- (List.tl env)@state.stack;
     (match (List.hd env) with
      | Env e -> state.env <- e
-     | _ -> failwith "Should not happen");
+     | _ -> failwith "Should not happen (RESTART)");
     state.extra_args <- state.extra_args + (n-1)
-  | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o))
+
+  (* Blocks *)
+  | MAKEBLOCK n -> let b = Array.make n Unit in
+    if (n > 0) then (
+      b.(0) <- state.accu;
+      let (vals, newStack) = pop_n (n-1) state.stack in state.stack <- newStack;
+      List.iteri (fun i v -> b.(i+1) <- v) vals;
+    ); state.accu <- Block b
+  | GETFIELD n -> (match state.accu with
+      | Block b -> state.accu <- b.(n)
+      | _ -> failwith "Should not happen (GETFIELD)")
+  | VECTLENGTH -> (match state.accu with
+      | Block b -> state.accu <- Int (Array.length b)
+      | _ -> failwith "Should not happen (VECTLENGTH)")
+  | GETVECTITEM ->
+    let n = (List.hd state.stack) and newStack = (List.tl state.stack) in
+    state.stack <- newStack;
+    (match state.accu, n with
+     | Block b, Int n -> state.accu <- b.(n)
+     | _ -> failwith "Should not happen (GETVECTITEM)")
+  | SETFIELD n ->
+    let v = (List.hd state.stack) and newStack = (List.tl state.stack) in
+    state.stack <- newStack;
+    (match state.accu with
+     | Block b -> b.(n)<-v
+     | _ -> failwith "Should not happen (SETFIELD)")
+  | SETVECTITEM ->
+    let n = (List.hd state.stack) and newStack = (List.tl state.stack) in
+    let v = (List.hd newStack) and newStack = (List.tl newStack) in
+    state.stack <- newStack;
+    (match state.accu, n with
+    | Block b, Int n -> b.(n)<-v
+    | _ -> failwith "Should not happen (SETVECTITEM)"
+    );
+    state.accu <- Unit;
+  | ASSIGN n ->
+    let (temp, newStack) = pop_n n state.stack in
+    state.stack <- temp@[state.accu]@(List.tl newStack)
+  (* | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o)) *)
 
 let eval_ins = function
   | Anon o -> eval_opcode o

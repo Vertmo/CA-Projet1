@@ -72,9 +72,14 @@ type vm_state = {
 \end{lstlisting}
 On remarque qu'on utilise des champs mutables dans le record; en effet on utilise une seule structure globale qu'on modifie durant l'exécution d'un programme (le registre prog n'est bien sur modifié qu'au début de l'exécution, puisque le programme ne change pas durant l'exécution). Ce n'est pas très ``pur'' mais cela simplifie la signature des fonctions, et rends le code plus concis.
 
+\section{Extensions réalisées}
+
+\subsection{Blocs de valeurs}
+On implémente les blocs par un array ($mlvalue\:array$), qui a l'avantage d'étre mutable en OCaml, et donc correspond exactement à nos besoins.
+TODO
+
 \section{Tests ajoutés}
 Les tests ajoutés se trouvent dans le dossier \textit{samples/my\_tests}. Ils ont principalement été générés en compilant du code OCaml avec l'option \textit{-dinstr} (avec bien sur quelques adaptations pour rester dans le jeu d'instruction de la mini-zam).
-
 TODO
 
 \end{document}
