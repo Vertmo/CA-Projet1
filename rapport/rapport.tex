@@ -75,7 +75,11 @@ On remarque qu'on utilise des champs mutables dans le record; en effet on utilis
 \section{Extensions réalisées}
 
 \subsection{Blocs de valeurs}
-On implémente les blocs par un array ($mlvalue\:array$), qui a l'avantage d'étre mutable en OCaml, et donc correspond exactement à nos besoins.
+On implémente les blocs par un array ($mlvalue\:array$), qui a l'avantage d'étre mutable en OCaml, et donc correspond exactement à nos besoins. On ajoute donc un constructeur $Block\:of\:mlvalue\:array$ dans le type $mlvalue$.\\
+TODO
+
+\subsection{Exceptions}
+On encode un stack pointer par le type $mlvalue\:list\:option$, ce qui correspond à une adresse sur la pile (le type $option$ permet d'exprimer l'absence de récupérateur d'exception). On ajoute donc un registre $trap\_sp$ de ce type dans la structure $vm\_state$, ainsi qu'un constructeur $StackPointer\:of\:mlvalue\:list\:option$ dans le type $mlvalue$, pour pouvoir empiler un pointeur de pile.\\
 TODO
 
 \section{Tests ajoutés}

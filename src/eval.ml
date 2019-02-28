@@ -8,6 +8,7 @@ type mlvalue = Int of int
              | ExtraArgs of int
              | Env of mlvalue list
              | Block of mlvalue array
+             | StackPointer of mlvalue list option
 
 let rec string_of_mlvalue = function
   | Int i -> string_of_int i
@@ -19,6 +20,7 @@ let rec string_of_mlvalue = function
   | Env _ -> "env"
   | Block a -> Printf.sprintf "(%s)" (String.concat ","
                                         (Array.to_list (Array.map string_of_mlvalue a)))
+  | StackPointer _ -> "sp"
 
 type vm_state = {
   mutable prog: ins list;
@@ -27,6 +29,7 @@ type vm_state = {
   mutable pc: int;
   mutable accu: mlvalue;
   mutable extra_args: int;
+  mutable trap_sp: mlvalue list option;
 }
 
 let state: vm_state = {
@@ -36,6 +39,7 @@ let state: vm_state = {
   pc = 0;
   accu = Unit;
   extra_args = 0;
+  trap_sp = None;
 }
 
 let rec pop_n n = function
@@ -180,7 +184,36 @@ let eval_opcode = function
   | ASSIGN n ->
     let (temp, newStack) = pop_n n state.stack in
     state.stack <- temp@[state.accu]@(List.tl newStack)
-  | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o))
+
+  (* Exceptions *)
+  | PUSHTRAP l ->
+    state.stack <- [Pc (find_pc_of_label l 0 state.prog);
+                    StackPointer state.trap_sp;
+                    Env state.env;
+                    ExtraArgs state.extra_args]@state.stack;
+    state.trap_sp <- Some state.stack
+  | POPTRAP -> let newStack = (List.tl state.stack) in
+    let trap_sp = (List.hd newStack) and newStack = (List.tl newStack) in
+    state.stack <- (List.tl (List.tl newStack));
+    (match trap_sp with
+     | StackPointer sp -> state.trap_sp <- sp
+     | _ -> failwith "Should not happen (PUSHTRAP)")
+
+  | RAISE -> (match state.accu with
+      | Int i -> (match state.trap_sp with
+          | None -> print_endline (Printf.sprintf "Exception: %d" i); exit 1
+          | Some sp -> state.stack <- sp;
+            let pc = (List.hd state.stack) and newStack  = (List.tl state.stack) in
+            let trap_sp = (List.hd newStack) and newStack = (List.tl newStack) in
+            let env = (List.hd newStack) and newStack = (List.tl newStack) in
+            let extra_args = (List.hd newStack) and newStack = (List.tl newStack) in
+            state.stack <- newStack;
+            (match pc, trap_sp, env, extra_args with
+             | (Pc pc), (StackPointer sp), (Env env), (ExtraArgs extra_args) ->
+               state.pc <- pc; state.trap_sp <- sp; state.env <- env; state.extra_args <- extra_args
+             | _ -> failwith "Should not happen (RAISE)"))
+     | _ -> failwith "Should not happen (RAISE)")
+  (* | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o)) *)
 
 let eval_ins = function
   | Anon o -> eval_opcode o
