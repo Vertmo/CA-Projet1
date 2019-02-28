@@ -39,6 +39,10 @@ type opcode = CONST of int
             | SETFIELD of int
             | SETVECTITEM
             | ASSIGN of int
+            (* Exceptions *)
+            | PUSHTRAP of string
+            | POPTRAP
+            | RAISE
 
 let string_of_opcode = function
   | CONST n -> Printf.sprintf "CONST %d" n
@@ -57,6 +61,7 @@ let string_of_opcode = function
   | OFFSETCLOSURE -> "OFFSETCLOSURE"
   | GRAB n -> Printf.sprintf "GRAB %d" n
   | RESTART -> "RESTART"
+  (* Blocs *)
   | MAKEBLOCK n -> Printf.sprintf "MAKEBLOCK %d" n
   | GETFIELD n -> Printf.sprintf "GETFIELD %d" n
   | VECTLENGTH -> "VECTLENGTH"
@@ -64,6 +69,10 @@ let string_of_opcode = function
   | SETFIELD n -> Printf.sprintf "SETFIELD %d" n
   | SETVECTITEM -> Printf.sprintf "SETVECTITEM"
   | ASSIGN n -> Printf.sprintf "ASSIGN %d" n
+  (* Exceptions *)
+  | PUSHTRAP l -> Printf.sprintf "PUSHTRAP %s" l
+  | POPTRAP -> "POPTRAP"
+  | RAISE -> "RAISE"
 
 type ins =
   | Anon of opcode

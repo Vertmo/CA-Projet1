@@ -34,6 +34,7 @@ let opcode_of_string_and_args s args = match s with
   | "OFFSETCLOSURE" -> OFFSETCLOSURE
   | "GRAB" -> GRAB (int_of_string (List.nth args 0))
   | "RESTART" -> RESTART
+  (* Blocs *)
   | "MAKEBLOCK" -> MAKEBLOCK (int_of_string (List.nth args 0))
   | "GETFIELD" -> GETFIELD (int_of_string (List.nth args 0))
   | "VECTLENGTH" -> VECTLENGTH
@@ -41,6 +42,10 @@ let opcode_of_string_and_args s args = match s with
   | "SETFIELD" -> SETFIELD (int_of_string (List.nth args 0))
   | "SETVECTITEM" -> SETVECTITEM
   | "ASSIGN" -> ASSIGN (int_of_string (List.nth args 0))
+  (* Exceptions *)
+  | "PUSHTRAP" -> PUSHTRAP (List.nth args 0)
+  | "POPTRAP" -> POPTRAP
+  | "RAISE" -> RAISE
   | s -> failwith (Printf.sprintf "Unrecognized opcode %s" s)
 
 let scan l =
