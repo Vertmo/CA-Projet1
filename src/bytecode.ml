@@ -88,3 +88,23 @@ let string_of_ins = function
 
 let string_of_bc bc =
   String.concat "\n" (List.map string_of_ins bc)
+
+(** Transform every instance of APPLY n; RETURN m-n into APPTERM n,m *)
+let transformAppterm bc =
+  List.rev (fst (List.fold_left (fun (nbc, lastApply) ins -> match (lastApply, ins) with
+      (* Capturing the previous APPLY *)
+      | _, Anon (APPLY i) -> nbc, Some (Anon (APPLY i))
+      | _, Labeled (l, (APPLY i)) -> nbc, Some (Labeled (l, (APPLY i)))
+
+      (* Actual transformation *)
+      | Some (Anon (APPLY n)), Anon (RETURN m) -> (Anon (APPTERM (n,n+m))::nbc, None)
+      | Some (Anon (APPLY n)), Labeled (_, (RETURN m)) -> (Anon (APPTERM (n,n+m))::nbc, None)
+      | Some (Labeled (l, (APPLY n))), Anon (RETURN m) -> (Labeled (l, (APPTERM (n,n+m)))::nbc, None)
+      | Some (Labeled (l, (APPLY n))), Labeled (_, (RETURN m)) -> (Labeled (l, (APPTERM (n,n+m)))::nbc, None)
+
+      (* Default cases *)
+      | Some (Anon (APPLY i)), ins -> (ins::(Anon (APPLY i))::nbc, None)
+      | Some (Labeled (l, (APPLY i))), ins -> (ins::(Labeled (l, (APPLY i)))::nbc, None)
+      | Some pi, ins -> (ins::pi::nbc, None)
+      | None, ins -> (ins::nbc, None)
+    ) ([], None) bc))
