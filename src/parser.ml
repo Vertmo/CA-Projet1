@@ -34,6 +34,8 @@ let opcode_of_string_and_args s args = match s with
   | "OFFSETCLOSURE" -> OFFSETCLOSURE
   | "GRAB" -> GRAB (int_of_string (List.nth args 0))
   | "RESTART" -> RESTART
+  (* Appterm *)
+  | "APPTERM" -> APPTERM ((int_of_string (List.nth args 0)), (int_of_string (List.nth args 1)))
   (* Blocs *)
   | "MAKEBLOCK" -> MAKEBLOCK (int_of_string (List.nth args 0))
   | "GETFIELD" -> GETFIELD (int_of_string (List.nth args 0))

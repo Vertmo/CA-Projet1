@@ -31,6 +31,8 @@ type opcode = CONST of int
             | OFFSETCLOSURE
             | GRAB of int
             | RESTART
+            (* Appterm *)
+            | APPTERM of int * int
             (* Blocs de valeurs *)
             | MAKEBLOCK of int
             | GETFIELD of int
@@ -61,6 +63,8 @@ let string_of_opcode = function
   | OFFSETCLOSURE -> "OFFSETCLOSURE"
   | GRAB n -> Printf.sprintf "GRAB %d" n
   | RESTART -> "RESTART"
+  (* Appterm *)
+  | APPTERM (n, m) -> Printf.sprintf "APPTERM %d,%d" n m
   (* Blocs *)
   | MAKEBLOCK n -> Printf.sprintf "MAKEBLOCK %d" n
   | GETFIELD n -> Printf.sprintf "GETFIELD %d" n

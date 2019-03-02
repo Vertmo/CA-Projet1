@@ -147,6 +147,16 @@ let eval_opcode = function
      | _ -> failwith "Should not happen (RESTART)");
     state.extra_args <- state.extra_args + (n-1)
 
+  (* Appterm *)
+  | APPTERM (n, m) ->
+    let (args, newStack) = pop_n n state.stack in
+    let (_, newStack) = pop_n (m-n) newStack in
+    state.stack <- args@newStack;
+    (match state.accu with
+     | Closure (pc, env) -> (state.pc <- pc; state.env <- env)
+     | _ -> failwith "Should not happen (APPTERM)");
+    state.extra_args <- state.extra_args + (n-1)
+
   (* Blocs *)
   | MAKEBLOCK n -> let b = Array.make n Unit in
     if (n > 0) then (
@@ -213,7 +223,6 @@ let eval_opcode = function
                state.pc <- pc; state.trap_sp <- sp; state.env <- env; state.extra_args <- extra_args
              | _ -> failwith "Should not happen (RAISE)"))
      | _ -> failwith "Should not happen (RAISE)")
-  (* | o -> failwith (Printf.sprintf "Opcode %s not yet implemented" (string_of_opcode o)) *)
 
 let eval_ins = function
   | Anon o -> eval_opcode o
