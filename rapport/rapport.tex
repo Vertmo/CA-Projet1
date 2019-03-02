@@ -74,16 +74,20 @@ On remarque qu'on utilise des champs mutables dans le record; en effet on utilis
 
 \section{Extensions réalisées}
 
+\subsection{Appels terminaux}
+Implémenter l'instruction $APPTERM$ est assez simple, puisqu'il s'agit simplement de combiner les effets des instructions $APPLY$ et $RETURN$.\\
+En revance, l'implémentation de la passe de transformation $$APPLY\:n;RETURN\:(m-n) \rightarrow APPTERM\:n,m$$ demande un peu plus de travail, en particulier à cause de mon implémentation des instructions (par un type somme avec ou sans label) qui complique le pattern matching réalisant cette opération. La fonction qui implémente cette fonctionnalité est $Bytecode.transformAppterm$.
+
 \subsection{Blocs de valeurs}
 On implémente les blocs par un array ($mlvalue\:array$), qui a l'avantage d'étre mutable en OCaml, et donc correspond exactement à nos besoins. On ajoute donc un constructeur $Block\:of\:mlvalue\:array$ dans le type $mlvalue$.\\
-TODO
+La plupart des instructions ajoutées agissent ensuite sur ce type de valeurs. On remarque cela dit que l'instruction $ASSIGN$, qui agit sur la pile, et moins efficace que les autre, puisqu'elle requiert de modifier une valeur ``en place'' de la pile: $ASSIGN n$ revient donc à dépiler $n+1$ éléments, puis à empiler la nouvelle valeur et réempiler $n$ valeurs précédemments dépilées. Cette opération se fait donc en temps linéaire en $n$, et est donc assez couteuse, mais on ne peut pas vraiment faire mieux sans beaucoup modifier notre implémentation de la pile (ce qui nous couterait sans doute plus cher ailleurs).
 
 \subsection{Exceptions}
 On encode un stack pointer par le type $mlvalue\:list\:option$, ce qui correspond à une adresse sur la pile (le type $option$ permet d'exprimer l'absence de récupérateur d'exception). On ajoute donc un registre $trap\_sp$ de ce type dans la structure $vm\_state$, ainsi qu'un constructeur $StackPointer\:of\:mlvalue\:list\:option$ dans le type $mlvalue$, pour pouvoir empiler un pointeur de pile.\\
-TODO
+On constate que la pose de récupérateur est, comme vu dans le cours, un peu couteuse, puisqu'elle requiert de trouver la position d'un label dans le code (et donc doit parcourir le bytecode, ou au moins la liste des labels, si on optimisait la vm pour conserver une liste des labels et les positions correspondantes). $RAISE$ en revanche n'est pas si couteux que ça, même si il demande de faire quelques manipulations de la pile.
 
 \section{Tests ajoutés}
-Les tests ajoutés se trouvent dans le dossier \textit{samples/my\_tests}. Ils ont principalement été générés en compilant du code OCaml avec l'option \textit{-dinstr} (avec bien sur quelques adaptations pour rester dans le jeu d'instruction de la mini-zam).
+Les tests ajoutés se trouvent dans le dossier \textit{samples/my\_tests}. Ils ont principalement été générés en compilant du code OCaml avec l'option \textit{-dinstr} (avec bien sur quelques adaptations pour rester dans le jeu d'instruction de la mini-zam).\\
 TODO
 
 \end{document}
