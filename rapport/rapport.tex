@@ -88,6 +88,6 @@ On constate que la pose de récupérateur est, comme vu dans le cours, un peu co
 
 \section{Tests ajoutés}
 Les tests ajoutés se trouvent dans le dossier \textit{samples/my\_tests}. Ils ont principalement été générés en compilant du code OCaml avec l'option \textit{-dinstr} (avec bien sur quelques adaptations pour rester dans le jeu d'instruction de la mini-zam).\\
-TODO
+Afin de mieux tester les blocs (ainsi que les fonctions récursives et n-aires) on a implémenté dans les fichier \textit{map.ml} et \textit{map.txt} la fonction $map$, telle que définie dans la bibliothèque standard d'OCaml. De plus, afin de continuer à tester ces aspects, et pouvoir également tester l'application terminale, on a aussi implémenté le $fold\_left$, ainsi que, pour comparer, le $fold\_right$. Comme on le sait, ce deuxième n'est pas récursif terminal, et on constate en effet en lisant le bytecode que ce n'est pas le cas (la séquence $APPLY\:2; RETURN\:3$ présente dans \textit{fold\_right.txt} correspond à l'appel de la fonction $f$, et non pas à l'appel récursif).
 
 \end{document}

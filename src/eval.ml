@@ -75,7 +75,8 @@ let rec find_pc_of_label l c = function
   | (Labeled (l', _))::_ when l' = l -> c
   | _::q -> find_pc_of_label l (c+1) q
 
-let eval_opcode = function
+let eval_opcode o = try
+  match o with
   | CONST n -> state.accu <- Int n
   | PUSH -> state.stack <- state.accu::state.stack
   | POP -> state.stack <- List.tl state.stack
@@ -104,7 +105,7 @@ let eval_opcode = function
       let env = (List.hd newStack) and newStack = (List.tl newStack) in
       let extra_args = (List.hd newStack) and newStack = (List.tl newStack) in
       state.stack <- newStack;
-      (match (pc, env,extra_args) with
+      (match (pc, env, extra_args) with
        | (Pc pc), (Env e), (ExtraArgs ext) -> (state.pc <- pc; state.env <- e; state.extra_args <- ext)
        | _ -> failwith "Should not happen (RETURN)"))
     else (
@@ -223,6 +224,7 @@ let eval_opcode = function
                state.pc <- pc; state.trap_sp <- sp; state.env <- env; state.extra_args <- extra_args
              | _ -> failwith "Should not happen (RAISE)"))
      | _ -> failwith "Should not happen (RAISE)")
+  with Failure e -> failwith (Printf.sprintf "Exception evaluating '%s': %s" (string_of_opcode o) e)
 
 let eval_ins = function
   | Anon o -> eval_opcode o
