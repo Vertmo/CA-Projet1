@@ -128,8 +128,8 @@ let eval_opcode o = try
       | _ -> failwith "Should not happen (OFFSETCLOSURE)")
   | GRAB n -> if state.extra_args >= n then state.extra_args <- state.extra_args - n
     else (
-      let (env, newStack) = pop_n (state.extra_args+1) state.stack in state.stack <- newStack; (* TODO Combien on dépile ? *)
-      state.accu <- Closure (state.pc-1, (Env state.env)::env); (* TODO a verifier *)
+      let (env, newStack) = pop_n (state.extra_args+1) state.stack in state.stack <- newStack;
+      state.accu <- Closure (state.pc-1, (Env state.env)::env);
       let pc = (List.hd state.stack) and newStack = (List.tl state.stack) in
       let env = (List.hd newStack) and newStack = (List.tl newStack) in
       let extra_args = (List.hd newStack) and newStack = (List.tl newStack) in
