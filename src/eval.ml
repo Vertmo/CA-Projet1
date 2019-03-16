@@ -13,11 +13,11 @@ type mlvalue = Int of int
 let rec string_of_mlvalue = function
   | Int i -> string_of_int i
   | Unit -> "()"
-  | Closure (pc, _) -> Printf.sprintf "closure %d <env>" pc
-  | Pc i -> Printf.sprintf "pc %d " i
+  | Closure (pc, e) -> Printf.sprintf "(closure %d [%s])" pc (String.concat ";" (List.map string_of_mlvalue e))
+  | Pc i -> Printf.sprintf "pc %d" i
   | Label l -> Printf.sprintf "label %s" l
   | ExtraArgs n -> Printf.sprintf "extra_args %d" n
-  | Env _ -> "env"
+  | Env e -> Printf.sprintf "(env [%s])" (String.concat ";" (List.map string_of_mlvalue e))
   | Block a -> Printf.sprintf "(%s)" (String.concat ","
                                         (Array.to_list (Array.map string_of_mlvalue a)))
   | StackPointer _ -> "sp"
@@ -41,6 +41,15 @@ let state: vm_state = {
   extra_args = 0;
   trap_sp = None;
 }
+
+let string_of_state state =
+  Printf.sprintf "%s: %s accu=%s stack=[%s] env=[%s] extra_args=%s"
+    (string_of_int state.pc)
+    (string_of_ins (List.nth state.prog state.pc))
+    (string_of_mlvalue state.accu)
+    (String.concat ";" (List.map string_of_mlvalue state.stack))
+    (String.concat ";" (List.map string_of_mlvalue state.env))
+    (string_of_int state.extra_args)
 
 let rec pop_n n = function
   | [] -> if n = 0 then ([], []) else failwith "Should not happen"
@@ -234,6 +243,7 @@ let eval_bc bc =
   state.prog <- bc;
   let n = List.length bc in
   while (state.pc < n) do
+    (* print_endline (string_of_state state); *)
     let oldPc = state.pc in
     eval_ins (List.nth bc state.pc);
     if(oldPc = state.pc) then state.pc <- state.pc + 1

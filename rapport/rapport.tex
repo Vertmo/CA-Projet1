@@ -10,7 +10,7 @@
 
 \section{Choix du langage et structure du projet}
 
-Pour implémenter une machine virtuelle chargée d'exécuter du Caml, quoi de mieux que le langage OCaml ? Blague a part, la principale raison de ce choix est la sécurité donnée par le typage, en particulier au niveau des instructions et des valeurs (comme on le verra dans la section suivante). La Garbage Collector d'OCaml permet aussi de ne pas avoir à nous soucier d'en implémenter un nous même (puisque les valeurs à nettoyer seront celles également inaccessibles dans la mémoire du programme, elles seront nettoyées par le GC d'OCaml).\\
+Pour implémenter une machine virtuelle chargée d'exécuter du Caml, quoi de mieux que le langage OCaml ? Blague a part, la principale raison de ce choix est la sécurité donnée par le typage, en particulier au niveau des instructions et des valeurs (comme on le verra dans la section suivante). Le Garbage Collector d'OCaml permet aussi de ne pas avoir à nous soucier d'en implémenter un nous même (puisque les valeurs à nettoyer seront celles également inaccessibles dans la mémoire du programme, elles seront nettoyées par le GC d'OCaml).\\
 
 \subsection{Utilisation}
 
@@ -20,7 +20,7 @@ Le projet utilise \textit{dune} comme build system. Il peut donc être compilé 
 
 Le projet est structuré en 4 modules principaux:
 \begin{itemize}
-  \item \textbf{Minizam} contient le parsing des arguments de la ligne de commande, ainsi que le main
+  \item \textbf{Minizam} contient le parsing des arguments de la ligne de commande, ainsi que la fonction $main$
   \item \textbf{Bytecode} contient les types permettant de décrire un programme (voir la description de ces types plus bas) ainsi que quelques fonctions permettant d'afficher le bytecode (principalement pour débugger le parser).
   \item \textbf{Parser} contient comme son nom l'indique les fonctions permettant de parser un programme depuis un fichier texte
   \item \textbf{Eval} contient les fonctions permettant d'interpreter le bytecode chargé, ainsi que les définitions des types nécessaires à l'interpretation (voir la section suivante).
@@ -56,8 +56,8 @@ type mlvalue = Int of int
              | ExtraArgs of int
              | Env of mlvalue list
 \end{lstlisting}
-On remarque qu'on représente simplement les fermetures par un pointeur de code, accompagné de l'environnement statique de la fermeture. On remarque également que les booleans sont vus comme des valeurs numériques, ce qui est aussi le cas dans la vraie ZAM.\\
-Dans cette version, on a fait ce même choix pour pouvoir manipuler la valeur $true$, représentée par $CONST\:1$ dans le bytecode (idem $false$ par $CONST\:0$).\\
+On remarque qu'on représente simplement les fermetures par un pointeur de code, accompagné de l'environnement statique de la fermeture.\\
+On remarque également que les booleans sont vus comme des valeurs numériques, ce qui est aussi le cas dans la vraie ZAM. Dans cette version, on a fait ce même choix pour pouvoir manipuler la valeur $true$, représentée par $CONST\:1$ dans le bytecode (idem $false$ par $CONST\:0$).\\
 
 L'état de la machine virtuelles (c'est à dire les registres) est lui représenté par un record du type suivant:
 \begin{lstlisting}
@@ -70,13 +70,13 @@ type vm_state = {
   mutable extra_args: int;
 }
 \end{lstlisting}
-On remarque qu'on utilise des champs mutables dans le record; en effet on utilise une seule structure globale qu'on modifie durant l'exécution d'un programme (le registre prog n'est bien sur modifié qu'au début de l'exécution, puisque le programme ne change pas durant l'exécution). Ce n'est pas très ``pur'' mais cela simplifie la signature des fonctions, et rends le code plus concis.
+On remarque qu'on utilise des champs mutables dans le record; en effet on utilise une seule structure globale qu'on modifie durant l'exécution d'un programme (le registre prog n'est bien sur modifié qu'au début de l'exécution, puisque le programme ne change pas durant l'exécution). Ce n'est pas très ``pur'' mais cela simplifie la signature des fonctions, et rends le code plus concis et lisible.
 
 \section{Extensions réalisées}
 
 \subsection{Appels terminaux}
 Implémenter l'instruction $APPTERM$ est assez simple, puisqu'il s'agit simplement de combiner les effets des instructions $APPLY$ et $RETURN$.\\
-En revance, l'implémentation de la passe de transformation $$APPLY\:n;RETURN\:(m-n) \rightarrow APPTERM\:n,m$$ demande un peu plus de travail, en particulier à cause de mon implémentation des instructions (par un type somme avec ou sans label) qui complique le pattern matching réalisant cette opération. La fonction qui implémente cette fonctionnalité est $Bytecode.transformAppterm$.
+En revance, l'implémentation de la passe de transformation $$APPLY\:n;RETURN\:(m-n) \rightarrow APPTERM\:n,m$$ demande un peu plus de travail, en particulier à cause de mon implémentation des instructions (par un type somme avec ou sans label) qui complique le pattern matching réalisant cette opération. La fonction qui implémente cette fonctionnalité est $Bytecode.transformAppterm$: on observe que le pattern matching comporte en effet beaucoup de cas.
 
 \subsection{Blocs de valeurs}
 On implémente les blocs par un array ($mlvalue\:array$), qui a l'avantage d'étre mutable en OCaml, et donc correspond exactement à nos besoins. On ajoute donc un constructeur $Block\:of\:mlvalue\:array$ dans le type $mlvalue$.\\
